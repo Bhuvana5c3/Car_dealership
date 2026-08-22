@@ -28,3 +28,6 @@ Thumbs.db
 .agents/
 .claude/
 .windsurf/
+
+
+backend/skills-lock.json
