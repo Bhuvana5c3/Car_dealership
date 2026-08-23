@@ -108,12 +108,13 @@ car-dealership/
 ├── PROMPTS.md
 ├── .gitignore
 └── README.md
-API Endpoints
-Authentication
+
+## API Endpoints
+## Authentication
 Method	Endpoint	Description
 POST	/api/auth/register	Register a new user
 POST	/api/auth/login	Log in and receive a JWT
-Vehicles
+## Vehicles
 Method	Endpoint	Access
 GET	/api/vehicles	Public
 GET	/api/vehicles/search	Public
@@ -126,7 +127,7 @@ Dealerships and Inventory
 
 The backend also provides dealership and inventory management APIs protected according to user roles.
 
-Local Setup
+##Local Setup
 Prerequisites
 
 Install the following:
@@ -219,7 +220,7 @@ npm run build
 
 The frontend production build completes successfully using TypeScript and Vite.
 
-Security
+## Security
 
 The application includes several security measures:
 
