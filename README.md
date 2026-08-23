@@ -232,6 +232,27 @@ Database credentials and secrets are stored using environment variables.
 Screenshots
 
 Screenshots of the completed application should be included here.
+## Screenshots
+
+### Login
+The authentication interface allows users to securely sign in to the application.
+
+![Login](screenshots/login.jpeg)
+
+### User Registration
+Users can create an account using the registration form.
+
+![Registration](screenshots/Registration.jpeg)
+
+### Vehicle Search and Purchase
+Users can search for vehicles and purchase available vehicles. The inventory quantity is updated after a successful purchase.
+
+![Vehicle Purchase](screenshots/Purchase.jpeg)
+
+### Admin Vehicle Management
+Administrators have additional controls for managing the vehicle inventory, including adding, editing, restocking, and deleting vehicles.
+
+![Admin Dashboard](screenshots/admin-dashboard.jpeg)
 
 Recommended screenshots:
 
