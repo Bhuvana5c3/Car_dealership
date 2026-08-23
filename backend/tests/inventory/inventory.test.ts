@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import app from "../../src/app.js";
 import { prisma } from "../../src/config/prisma.js";
 
-const adminEmail = `admin-inv-${Date.now()}@example.com`;
-const userEmail = `user-inv-${Date.now()}@example.com`;
+const adminEmail = `admin-inv-${Date.now()}@gmail.com`;
+const userEmail = `user-inv-${Date.now()}@gmail.com`;
 const password = "Password123!";
 
 async function createUser(email: string, role: "USER" | "ADMIN") {
@@ -34,9 +34,20 @@ describe("Inventory API", () => {
     adminToken = await login(adminEmail);
     userToken = await login(userEmail);
 
-    const d = await prisma.dealership.create({ data: { name: `test-dealership-${Date.now()}` } });
+    const d = await prisma.dealership.create({
+  data: { name: `test-dealership-${Date.now()}-${Math.random()}` },
+});
     dealershipId = d.id;
-    const v = await prisma.vehicle.create({ data: { vin: `TESTVIN-${Date.now()}`, make: 'InvMake', model: 'InvModel', year: 2022, price: 20000, status: 'AVAILABLE' } as any });
+    const v = await prisma.vehicle.create({
+  data: {
+    vin: `TESTVIN-${Date.now()}-${Math.random()}`,
+    make: "InvMake",
+    model: "InvModel",
+    year: 2022,
+    price: 20000,
+    status: "AVAILABLE",
+  } as any,
+});
     vehicleId = v.id;
   });
 

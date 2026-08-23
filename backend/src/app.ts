@@ -1,9 +1,11 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
+
 import authRouter from "./routes/auth.routes.js";
 import dealershipRouter from "./routes/dealership.routes.js";
 import vehicleRouter from "./routes/vehicle.routes.js";
 import inventoryRouter from "./routes/inventory.routes.js";
+
 import {
   DuplicateEmailError,
   ValidationError,
@@ -13,13 +15,26 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use((req, _res, next) => {
+  console.log("DEBUG BODY:", req.body);
+  next();
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/dealerships", dealershipRouter);
 app.use("/api/vehicles", vehicleRouter);
-// inventory router is mounted on the dealerships path to inherit :id param
+
+// Inventory routes
 app.use("/api/dealerships/:id/inventory", inventoryRouter);
 
-const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+const errorHandler: ErrorRequestHandler = (
+  error,
+  _request,
+  response,
+  _next,
+) => {
+  console.error("🔥 BACKEND ERROR:", error);
+
   if (error instanceof ValidationError) {
     return response.status(400).json({
       success: false,
@@ -42,13 +57,15 @@ const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => 
   ) {
     return response.status(409).json({
       success: false,
-      message: "Email already registered",
+      message: "Duplicate value already exists",
     });
   }
 
   return response.status(500).json({
     success: false,
-    message: "Internal server error",
+    message: error instanceof Error
+      ? error.message
+      : "Internal server error",
   });
 };
 

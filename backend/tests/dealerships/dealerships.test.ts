@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import app from "../../src/app.js";
 import { prisma } from "../../src/config/prisma.js";
 
-const adminEmail = `admin-test-${Date.now()}@example.com`;
-const userEmail = `user-test-${Date.now()}@example.com`;
+const adminEmail = `admin-test-${Date.now()}@gmail.com`;
+const userEmail = `user-test-${Date.now()}@gmail.com`;
 const password = "Password123!";
 
 async function createUser(email: string, role: "USER" | "ADMIN") {
@@ -15,7 +15,12 @@ async function createUser(email: string, role: "USER" | "ADMIN") {
 }
 
 async function login(email: string) {
-  const resp = await request(app).post("/api/auth/login").send({ email, password });
+  const resp = await request(app)
+    .post("/api/auth/login")
+    .send({ email, password });
+
+  console.log("TEST LOGIN:", email, resp.status, resp.body);
+
   return resp.body.token as string;
 }
 
@@ -34,10 +39,34 @@ describe("Dealerships API", () => {
   });
 
   afterAll(async () => {
-    await prisma.dealership.deleteMany({ where: { name: { contains: "test-dealership-" } } });
-    await prisma.user.deleteMany({ where: { email: { in: [adminEmail, userEmail] } } });
-    await prisma.$disconnect();
+  await prisma.inventory.deleteMany({
+    where: {
+      dealership: {
+        name: {
+          contains: "test-dealership-",
+        },
+      },
+    },
   });
+
+  await prisma.dealership.deleteMany({
+    where: {
+      name: {
+        contains: "test-dealership-",
+      },
+    },
+  });
+
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [adminEmail, userEmail],
+      },
+    },
+  });
+
+  await prisma.$disconnect();
+});
 
   it("lists dealerships", async () => {
     const d1 = await prisma.dealership.create({ data: { name: `test-dealership-${Date.now()}`, address: "Addr" } });
