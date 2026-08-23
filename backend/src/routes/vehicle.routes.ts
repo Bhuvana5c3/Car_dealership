@@ -5,17 +5,17 @@ import { requireRole } from "../middleware/role.middleware.js";
 
 const router = Router();
 
-// Search must come before /:id
-router.get(
-  "/search",
-  authenticateJWT,
-  controller.searchVehicles,
-);
-
+// Public vehicle listing
 router.get("/", controller.listVehicles);
 
+// Public vehicle search
+// Must come before /:id
+router.get("/search", controller.searchVehicles);
+
+// Public single vehicle
 router.get("/:id", controller.getVehicle);
 
+// Admin: create vehicle
 router.post(
   "/",
   authenticateJWT,
@@ -23,6 +23,7 @@ router.post(
   controller.createVehicle,
 );
 
+// Admin: update vehicle
 router.put(
   "/:id",
   authenticateJWT,
@@ -30,11 +31,27 @@ router.put(
   controller.updateVehicle,
 );
 
+// Admin: delete vehicle
 router.delete(
   "/:id",
   authenticateJWT,
   requireRole("ADMIN"),
   controller.deleteVehicle,
+);
+
+// Authenticated users: purchase vehicle
+router.post(
+  "/:id/purchase",
+  authenticateJWT,
+  controller.purchaseVehicle,
+);
+
+// Admin: restock vehicle
+router.post(
+  "/:id/restock",
+  authenticateJWT,
+  requireRole("ADMIN"),
+  controller.restockVehicle,
 );
 
 export default router;

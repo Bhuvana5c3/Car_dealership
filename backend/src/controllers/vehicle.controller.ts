@@ -6,8 +6,10 @@ export async function listVehicles(req: Request, res: Response) {
 
   const page = q(req.query.page) ?? "1";
   const limit = q(req.query.limit) ?? "20";
+
   const make = q(req.query.make);
   const model = q(req.query.model);
+  const category = q(req.query.category);
   const status = q(req.query.status);
   const minPrice = q(req.query.minPrice);
   const maxPrice = q(req.query.maxPrice);
@@ -23,6 +25,7 @@ export async function listVehicles(req: Request, res: Response) {
   const filters = {
     make: typeof make === "string" ? make : undefined,
     model: typeof model === "string" ? model : undefined,
+    category: typeof category === "string" ? category : undefined,
     status: typeof status === "string" ? status : undefined,
     minPrice:
       minPrice !== undefined && minPrice !== ""
@@ -48,8 +51,6 @@ export async function listVehicles(req: Request, res: Response) {
     l,
   );
 
-  const totalPages = Math.ceil(total / l);
-
   return res.json({
     success: true,
     data: items,
@@ -57,7 +58,7 @@ export async function listVehicles(req: Request, res: Response) {
       page: p,
       limit: l,
       total,
-      totalPages,
+      totalPages: Math.ceil(total / l),
     },
   });
 }
@@ -67,12 +68,14 @@ export async function searchVehicles(req: Request, res: Response) {
 
   const make = q(req.query.make);
   const model = q(req.query.model);
+  const category = q(req.query.category);
   const minPrice = q(req.query.minPrice);
   const maxPrice = q(req.query.maxPrice);
 
   const filters = {
     make: typeof make === "string" ? make : undefined,
     model: typeof model === "string" ? model : undefined,
+    category: typeof category === "string" ? category : undefined,
     minPrice:
       minPrice !== undefined && minPrice !== ""
         ? Number(minPrice)
@@ -152,9 +155,11 @@ export async function createVehicle(req: Request, res: Response) {
     vin,
     make,
     model,
+    category,
     year,
     mileage,
     price,
+    quantity,
     status,
   } = req.body;
 
@@ -214,7 +219,8 @@ export async function createVehicle(req: Request, res: Response) {
 
   if (
     mileage !== undefined &&
-    Number(mileage) < 0
+    (!Number.isFinite(Number(mileage)) ||
+      Number(mileage) < 0)
   ) {
     return res.status(400).json({
       success: false,
@@ -222,10 +228,25 @@ export async function createVehicle(req: Request, res: Response) {
     });
   }
 
-  if (Number(price) < 0) {
+  if (
+    price === undefined ||
+    !Number.isFinite(Number(price)) ||
+    Number(price) < 0
+  ) {
     return res.status(400).json({
       success: false,
       message: "Invalid price",
+    });
+  }
+
+  if (
+    quantity !== undefined &&
+    (!Number.isInteger(Number(quantity)) ||
+      Number(quantity) < 0)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid quantity",
     });
   }
 
@@ -234,13 +255,21 @@ export async function createVehicle(req: Request, res: Response) {
       vin: vin.trim(),
       make: make.trim(),
       model: model.trim(),
+      category:
+        typeof category === "string" && category.trim()
+          ? category.trim()
+          : "Other",
       year: y,
       mileage:
         mileage !== undefined
           ? Number(mileage)
           : undefined,
       price: Number(price),
-      status,
+      quantity:
+        quantity !== undefined
+          ? Number(quantity)
+          : 0,
+      status: status || "AVAILABLE",
     });
 
     return res.status(201).json({
@@ -277,7 +306,7 @@ export async function updateVehicle(
     });
   }
 
-  const data = req.body;
+  const data = { ...req.body };
 
   if (data.year !== undefined) {
     const y = Number(data.year);
@@ -317,6 +346,17 @@ export async function updateVehicle(
     });
   }
 
+  if (
+    data.quantity !== undefined &&
+    (!Number.isInteger(Number(data.quantity)) ||
+      Number(data.quantity) < 0)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid quantity",
+    });
+  }
+
   try {
     const updated = await vehicleService.updateVehicle(
       id,
@@ -327,7 +367,7 @@ export async function updateVehicle(
       success: true,
       data: updated,
     });
-  } catch (err) {
+  } catch {
     return res.status(404).json({
       success: false,
       message: "Vehicle not found",
@@ -355,10 +395,104 @@ export async function deleteVehicle(
       success: true,
       data: null,
     });
-  } catch (err) {
+  } catch {
     return res.status(404).json({
       success: false,
       message: "Vehicle not found or cannot be deleted",
     });
+  }
+}
+
+export async function purchaseVehicle(
+  req: Request,
+  res: Response,
+) {
+  const id = req.params.id;
+
+  if (!id || Array.isArray(id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid id",
+    });
+  }
+
+  try {
+    const vehicle =
+      await vehicleService.purchaseVehicle(id);
+
+    return res.json({
+      success: true,
+      data: vehicle,
+    });
+  } catch (err) {
+    if (
+      err instanceof vehicleService.InsufficientStockError
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    if (
+      err instanceof vehicleService.VehicleNotFoundError
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    throw err;
+  }
+}
+
+export async function restockVehicle(
+  req: Request,
+  res: Response,
+) {
+  const id = req.params.id;
+
+  if (!id || Array.isArray(id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid id",
+    });
+  }
+
+  const quantity = Number(req.body.quantity);
+
+  if (
+    !Number.isInteger(quantity) ||
+    quantity <= 0
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Restock quantity must be greater than 0",
+    });
+  }
+
+  try {
+    const vehicle =
+      await vehicleService.restockVehicle(
+        id,
+        quantity,
+      );
+
+    return res.json({
+      success: true,
+      data: vehicle,
+    });
+  } catch (err) {
+    if (
+      err instanceof vehicleService.VehicleNotFoundError
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    throw err;
   }
 }

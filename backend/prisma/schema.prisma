@@ -34,13 +34,15 @@ model Vehicle {
   vin       String        @unique
   make      String
   model     String
-  category  String
+  category  String        @default("Other")
   year      Int
   mileage   Int?
   price     Decimal
-  status    VehicleStatus
+  quantity  Int           @default(0)
+  status    VehicleStatus @default(AVAILABLE)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
   inventory Inventory[]
 
   @@index([make, model])
@@ -55,8 +57,9 @@ model Inventory {
   priceOverride Decimal?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
-  dealership    Dealership @relation(fields: [dealershipId], references: [id])
-  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id])
+
+  dealership Dealership @relation(fields: [dealershipId], references: [id])
+  vehicle    Vehicle    @relation(fields: [vehicleId], references: [id])
 
   @@unique([dealershipId, vehicleId])
   @@index([dealershipId])
