@@ -11,12 +11,14 @@ export async function listVehicles(req: Request, res: Response) {
   const model = q(req.query.model);
   const category = q(req.query.category);
   const status = q(req.query.status);
+
   const minPrice = q(req.query.minPrice);
   const maxPrice = q(req.query.maxPrice);
   const minYear = q(req.query.minYear);
   const maxYear = q(req.query.maxYear);
 
   const p = Math.max(1, parseInt(String(page), 10) || 1);
+
   const l = Math.max(
     1,
     Math.min(100, parseInt(String(limit), 10) || 20),
@@ -27,18 +29,22 @@ export async function listVehicles(req: Request, res: Response) {
     model: typeof model === "string" ? model : undefined,
     category: typeof category === "string" ? category : undefined,
     status: typeof status === "string" ? status : undefined,
+
     minPrice:
       minPrice !== undefined && minPrice !== ""
         ? Number(minPrice)
         : undefined,
+
     maxPrice:
       maxPrice !== undefined && maxPrice !== ""
         ? Number(maxPrice)
         : undefined,
+
     minYear:
       minYear !== undefined && minYear !== ""
         ? Number(minYear)
         : undefined,
+
     maxYear:
       maxYear !== undefined && maxYear !== ""
         ? Number(maxYear)
@@ -76,10 +82,12 @@ export async function searchVehicles(req: Request, res: Response) {
     make: typeof make === "string" ? make : undefined,
     model: typeof model === "string" ? model : undefined,
     category: typeof category === "string" ? category : undefined,
+
     minPrice:
       minPrice !== undefined && minPrice !== ""
         ? Number(minPrice)
         : undefined,
+
     maxPrice:
       maxPrice !== undefined && maxPrice !== ""
         ? Number(maxPrice)
@@ -255,20 +263,27 @@ export async function createVehicle(req: Request, res: Response) {
       vin: vin.trim(),
       make: make.trim(),
       model: model.trim(),
+
       category:
-        typeof category === "string" && category.trim()
+        typeof category === "string" &&
+        category.trim()
           ? category.trim()
           : "Other",
+
       year: y,
+
       mileage:
         mileage !== undefined
           ? Number(mileage)
           : undefined,
+
       price: Number(price),
+
       quantity:
         quantity !== undefined
           ? Number(quantity)
           : 0,
+
       status: status || "AVAILABLE",
     });
 
@@ -328,7 +343,8 @@ export async function updateVehicle(
 
   if (
     data.mileage !== undefined &&
-    Number(data.mileage) < 0
+    (!Number.isFinite(Number(data.mileage)) ||
+      Number(data.mileage) < 0)
   ) {
     return res.status(400).json({
       success: false,
@@ -338,7 +354,8 @@ export async function updateVehicle(
 
   if (
     data.price !== undefined &&
-    Number(data.price) < 0
+    (!Number.isFinite(Number(data.price)) ||
+      Number(data.price) < 0)
   ) {
     return res.status(400).json({
       success: false,
@@ -355,6 +372,20 @@ export async function updateVehicle(
       success: false,
       message: "Invalid quantity",
     });
+  }
+
+  if (data.category !== undefined) {
+    if (
+      typeof data.category !== "string" ||
+      data.category.trim().length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category",
+      });
+    }
+
+    data.category = data.category.trim();
   }
 
   try {
