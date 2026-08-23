@@ -5,7 +5,7 @@ import app from "../../src/app.js";
 import { prisma } from "../../src/config/prisma.js";
 
 describe("POST /api/auth/login", () => {
-  const testEmail = "login-test-user@example.com";
+  const testEmail = "login-test-user@gmail.com";
 
   beforeEach(async () => {
     await prisma.user.deleteMany({
@@ -33,7 +33,7 @@ describe("POST /api/auth/login", () => {
     await prisma.$disconnect();
   });
 
-  it("logs in with valid credentials and returns a JWT", async () => {
+  it("logs in with valid Gmail credentials and returns a JWT", async () => {
     const response = await request(app)
       .post("/api/auth/login")
       .send({
@@ -78,15 +78,37 @@ describe("POST /api/auth/login", () => {
     expect(response.status).toBe(401);
   });
 
-  it("rejects a nonexistent email", async () => {
+  it("rejects a nonexistent Gmail address", async () => {
     const response = await request(app)
       .post("/api/auth/login")
       .send({
-        email: "nonexistent-login-user@example.com",
+        email: "nonexistent-login-user@gmail.com",
         password: "Password123",
       });
 
     expect(response.status).toBe(401);
+  });
+
+  it("rejects a non-Gmail email address", async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: "login-test-user@example.com",
+        password: "Password123",
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects a Yahoo email address", async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({
+        email: "login-test-user@yahoo.com",
+        password: "Password123",
+      });
+
+    expect(response.status).toBe(400);
   });
 
   it("rejects a missing email", async () => {

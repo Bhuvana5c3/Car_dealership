@@ -4,6 +4,7 @@ import { prisma } from "../config/prisma.js";
 
 export class ValidationError extends Error {}
 export class DuplicateEmailError extends Error {}
+export class InvalidCredentialsError extends Error {}
 
 export type RegisterInput = {
   name?: unknown;
@@ -12,6 +13,7 @@ export type RegisterInput = {
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const gmailPattern = /^[^\s@]+@gmail\.com$/i;
 
 export async function registerUser(input: RegisterInput) {
   const { name, email, password } = input;
@@ -21,6 +23,7 @@ export async function registerUser(input: RegisterInput) {
     name.trim().length === 0 ||
     typeof email !== "string" ||
     !emailPattern.test(email.trim()) ||
+    !gmailPattern.test(email.trim()) ||
     typeof password !== "string" ||
     password.length < 8
   ) {
@@ -28,6 +31,7 @@ export async function registerUser(input: RegisterInput) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+
   const existingUser = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
@@ -37,6 +41,7 @@ export async function registerUser(input: RegisterInput) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+
   const user = await prisma.user.create({
     data: {
       name: name.trim(),
@@ -55,12 +60,11 @@ export async function registerUser(input: RegisterInput) {
 
   return user;
 }
+
 export type LoginInput = {
   email?: unknown;
   password?: unknown;
 };
-
-export class InvalidCredentialsError extends Error {}
 
 export async function loginUser(input: LoginInput) {
   const { email, password } = input;
@@ -68,6 +72,7 @@ export async function loginUser(input: LoginInput) {
   if (
     typeof email !== "string" ||
     !emailPattern.test(email.trim()) ||
+    !gmailPattern.test(email.trim()) ||
     typeof password !== "string" ||
     password.length === 0
   ) {
@@ -84,7 +89,10 @@ export async function loginUser(input: LoginInput) {
     throw new InvalidCredentialsError("Invalid email or password");
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+  const passwordMatches = await bcrypt.compare(
+    password,
+    user.passwordHash,
+  );
 
   if (!passwordMatches) {
     throw new InvalidCredentialsError("Invalid email or password");

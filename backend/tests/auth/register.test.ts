@@ -4,7 +4,7 @@ import { prisma } from "../../src/config/prisma.js";
 
 const registrationInput = {
   name: "Test User",
-  email: "test@example.com",
+  email: "test.car.dealership@gmail.com",
   password: "Password123!",
 };
 
@@ -19,7 +19,7 @@ afterAll(async () => {
 });
 
 describe("POST /api/auth/register", () => {
-  it("registers a new user", async () => {
+  it("registers a new user with a Gmail address", async () => {
     const response = await request(app)
       .post("/api/auth/register")
       .send(registrationInput);
@@ -27,12 +27,14 @@ describe("POST /api/auth/register", () => {
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty("message");
     expect(response.body).toHaveProperty("user");
-    expect(response.body.user.email).toBe("test@example.com");
+    expect(response.body.user.email).toBe(registrationInput.email);
     expect(response.body.user).not.toHaveProperty("passwordHash");
   });
 
   it("rejects a duplicate email", async () => {
-    await request(app).post("/api/auth/register").send(registrationInput);
+    await request(app)
+      .post("/api/auth/register")
+      .send(registrationInput);
 
     const response = await request(app)
       .post("/api/auth/register")
@@ -44,6 +46,8 @@ describe("POST /api/auth/register", () => {
 
   it.each([
     ["invalid email", { ...registrationInput, email: "not-an-email" }],
+    ["non-Gmail email", { ...registrationInput, email: "test@example.com" }],
+    ["Yahoo email", { ...registrationInput, email: "test@yahoo.com" }],
     ["missing name", { ...registrationInput, name: undefined }],
     ["missing password", { ...registrationInput, password: undefined }],
     ["short password", { ...registrationInput, password: "short" }],
@@ -56,7 +60,9 @@ describe("POST /api/auth/register", () => {
   });
 
   it("hashes the stored password", async () => {
-    await request(app).post("/api/auth/register").send(registrationInput);
+    await request(app)
+      .post("/api/auth/register")
+      .send(registrationInput);
 
     const user = await prisma.user.findUniqueOrThrow({
       where: { email: registrationInput.email },
